@@ -1,10 +1,10 @@
-package com.example.ordres
+package com.example.orders
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class OrdresApplicationTests {
+class OrdersApplicationTests {
 
     @Test
     fun contextLoads() {
