@@ -1,0 +1,30 @@
+<html>
+<head>
+  <title>WebSocket</title>
+</head>
+<body>
+<div class="events"></div>
+<script>
+  const events = document.querySelector(".events");
+  const ws = new WebSocket("ws://localhost:8012/event-emitter");
+  ws.onopen = function () {
+    console.log('onopen', ws);
+    ws.send("Hello Spring!");
+  }
+
+  ws.onclose = function (err) {
+    console.error('onclose', err);
+    setMessage('Closed');
+  }
+
+  ws.onmessage = function (message) {
+    console.log('onmessage', message);
+    setMessage(message.data)
+  }
+
+  function setMessage(event) {
+    events.innerHTML = events.innerHTML + '<p>' + event + '</p>';
+  }
+</script>
+</body>
+</html>
