@@ -1,10 +1,13 @@
 package com.example.customers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -17,18 +20,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.server.HandlerFunction;
+import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
+import org.springframework.web.reactive.socket.WebSocketHandler;
+import org.springframework.web.reactive.socket.WebSocketMessage;
+import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.awt.*;
 import java.time.Duration;
-import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
+
+import static java.time.Instant.now;
+
 
 /**
  * Sample Spring Reactive Web at port 8012
@@ -107,14 +117,52 @@ public class CustomersApplication {
                                 .orElse("nobody")), String.class))
                 .build();
     }
+
+    @Bean
+    public HandlerMapping webSocketHandlerMapping(@Autowired final WebSocketHandler webSocketHandler) {
+        Map<String, WebSocketHandler> map = new HashMap<>();
+        map.put("/event-emitter", webSocketHandler);
+
+        SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
+        handlerMapping.setOrder(1);
+        handlerMapping.setUrlMap(map);
+        return handlerMapping;
+    }
 }
 
+
+@Component
+class ReactiveWebSocketHandler implements WebSocketHandler {
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    private final Flux<String> eventFlux = Flux.generate(sink -> {
+        Event event = new Event(UUID.randomUUID().toString(), now().toString());
+        try {
+            sink.next(mapper.writeValueAsString(event));
+        } catch (JsonProcessingException e) {
+            sink.error(e);
+        }
+    });
+
+    private final Flux<String> intervalFlux = Flux
+            .interval(Duration.ofMillis(1000L))
+            .zipWith(eventFlux, (time, event) -> event);
+
+    @Override
+    public Mono<Void> handle(WebSocketSession session) {
+        return session
+                .send(intervalFlux.map(session::textMessage))
+                .and(session.receive().map(WebSocketMessage::getPayloadAsText))
+                .log();
+    }
+}
 
 @Component
 class IntervalMessagePublisher {
     Flux<GreetingsResponse> greetings(GreetingsRequest request) {
         return Flux
-                .fromStream(Stream.generate(() -> "Hello " + request.getName() + " @ " + Instant.now()))
+                .fromStream(Stream.generate(() -> "Hello " + request.getName() + " @ " + now()))
                 .map(GreetingsResponse::new)
                 .delayElements(Duration.ofSeconds(1));
     }
@@ -188,4 +236,11 @@ class GreetingsRequest {
 @NoArgsConstructor
 class GreetingsResponse {
     private String message;
+}
+
+@Data
+@AllArgsConstructor
+class Event {
+    private String eventId;
+    private String eventDt;
 }
