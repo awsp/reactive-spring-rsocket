@@ -13,3 +13,9 @@ Learning Objectives Upnext:
 - http://localhost:8888
 - http://localhost:8012
 - tcp://localhost:8181
+
+### Installation
+#### RSocket Client (RSC)
+```sh
+brew install making/tap/rsc
+```

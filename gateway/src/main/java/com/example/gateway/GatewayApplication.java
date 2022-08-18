@@ -147,14 +147,12 @@ class CustomerOrders {
 }
 
 @Data
-@RequiredArgsConstructor
 @NoArgsConstructor
 class Order {
     private Integer id, customerId;
 }
 
 @Data
-@RequiredArgsConstructor
 @NoArgsConstructor
 class Customer {
     private Integer id;
