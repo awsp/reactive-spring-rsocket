@@ -19,3 +19,14 @@ Learning Objectives Upnext:
 ```sh
 brew install making/tap/rsc
 ```
+
+## RSocket Client (rsc)
+- `--steram` => `REQUEST_STREAM`
+- `--channel` => `REQUEST_CHANNEL`
+- `--request` => `REQUEST_RESPONSE`
+- `-d [String]` => Data
+- `--ab` => Enable Authentication Metadata
+
+```sh
+rsc tcp://localhost:8181 -r orders.1 --stream
+```
