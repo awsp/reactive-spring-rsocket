@@ -61,7 +61,8 @@ class OrderRSocketController {
      *   java -jar rsc.jar tcp://localhost:8181 -r orders.2 --stream
      */
     @MessageMapping("orders.{customerId}")
-    fun getOrdersFor(@DestinationVariable customerId: Int) = Flux.fromIterable(this.db[customerId]!!.toList())
+    fun getOrdersFor(@DestinationVariable customerId: Int) =
+        Flux.fromIterable(this.db[customerId]!!.toList())
 
     /**
      * Fire and forget model
@@ -70,11 +71,10 @@ class OrderRSocketController {
      * rsc tcp://localhost:8181 -r fire-and-forget -d '{"name": "abc", "id": 1}'
      */
     @MessageMapping("fire-and-forget")
-    fun fireAndForget(request: Mono<Order>) {
-        request
-            .doOnNext { t -> t.name = t.name + " (Updated)"}
+    fun fireAndForget(request: Mono<Order>): Mono<Order> {
+        return request
+            .doOnNext { t -> t.name = t.name + " (Updated)" }
             .doOnNext { t -> println(t.name) }
-            .subscribe()
     }
 
     /**
@@ -87,7 +87,7 @@ class OrderRSocketController {
     fun requestResponse(request: Mono<Order>): Mono<Order> {
         return request
             .doOnNext { t -> t.name = t.name + " (Updated)" }
-            .doOnNext { t -> println("RR: " + t.name)}
+            .doOnNext { t -> println("RR: " + t.name) }
     }
 
     @MessageMapping("request-response-stream")
